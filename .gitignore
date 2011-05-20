@@ -1,0 +1,6 @@
+.build/*
+Geo-CEP-*/*
+blib/*
+*.gz
+Makefile
+pm_to_blib

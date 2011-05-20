@@ -1,0 +1,96 @@
+=head1 NAME
+
+Geo::CEP - Resolve Brazilian city data for a given CEP
+
+=head1 VERSION
+
+version 0.1
+
+=head1 SYNOPSIS
+
+    use Data::Dumper;
+    use Geo::CEP;
+
+    my $gc = new Geo::CEP;
+    print Dumper $gc->find("12420-010");
+
+Produz:
+
+    $VAR1 = {
+              'state_long' => "S\x{e3}o Paulo",
+              'city' => 'Pindamonhangaba',
+              'lat' => '-22.9166667',
+              'lon' => '-45.4666667',
+              'ddd' => '12',
+              'state' => 'SP'
+            };
+
+=head1 DESCRIPTION
+
+Obtém os dados como: nome da cidade, do estado, número DDD e latitude/longitude (da cidade) para um número CEP (Código de Endereçamento Postal) brasileiro.
+
+Diferentemente do L<WWW::Correios::CEP>, consulta os dados armazenados localmente.
+Por um lado, isso faz L<Geo::CEP> ser extremamente rápido (5 mil consultas por segundo); por outro, somente as informações à nível de cidade são retornadas.
+
+=head1 METHODS
+
+=head2 find( CEP )
+
+Busca por CEP (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
+
+=over 4
+
+=item *
+
+I<state>: sigla da Unidade Federativa (SP, RJ, MG);
+
+=item *
+
+I<state_long>: nome da Unidade Federativa (São Paulo, Rio de Janeiro, Minas Gerais);
+
+=item *
+
+I<city>: nome da cidade;
+
+=item *
+
+I<ddd>: código DDD (pode estar vazio);
+
+=item *
+
+I<lat>/I<lon>: coordenadas geográficas da cidade (podem estar vazias).
+
+=back
+
+Retorna I<0> quando não foi possível encontrar.
+
+=head2 list()
+
+=encoding utf8
+
+=for Pod::Coverage BUILD
+DEMOLISH
+get_idx
+bsearch
+
+=head1 SEE ALSO
+
+=over 4
+
+=item *
+
+L<WWW::Correios::CEP>
+
+=back
+
+=head1 AUTHOR
+
+Stanislaw Pusep <stas@sysd.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Stanislaw Pusep.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
