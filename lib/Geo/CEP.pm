@@ -2,8 +2,6 @@
 package Geo::CEP;
 # ABSTRACT: Resolve Brazilian city data for a given CEP
 
-=encoding utf8
-
 =head1 SYNOPSIS
 
     use Data::Dumper;
@@ -48,28 +46,29 @@ has states  => (
     is      => 'ro',
     isa     => 'HashRef[Str]',
     default => sub {{
+        AC  => 'Acre',
         AL  => 'Alagoas',
-        AP  => 'Amapá',
         AM  => 'Amazonas',
+        AP  => 'Amapá',
         BA  => 'Bahia',
         CE  => 'Ceará',
         DF  => 'Distrito Federal',
         ES  => 'Espírito Santo',
         GO  => 'Goiás',
         MA  => 'Maranhão',
+        MG  => 'Minas Gerais',
         MS  => 'Mato Grosso do Sul',
         MT  => 'Mato Grosso',
-        MG  => 'Minas Gerais',
-        PR  => 'Paraná',
-        PB  => 'Paraíba',
         PA  => 'Pará',
+        PB  => 'Paraíba',
         PE  => 'Pernambuco',
         PI  => 'Piauí',
-        RN  => 'Rio Grande do Norte',
-        RS  => 'Rio Grande do Sul',
+        PR  => 'Paraná',
         RJ  => 'Rio de Janeiro',
+        RN  => 'Rio Grande do Norte',
         RO  => 'Rondônia',
         RR  => 'Roraima',
+        RS  => 'Rio Grande do Sul',
         SC  => 'Santa Catarina',
         SE  => 'Sergipe',
         SP  => 'São Paulo',
@@ -186,11 +185,13 @@ sub find {
 
 =method list()
 
+Retorna I<HashRef> com os dados de todas as cidades.
+
 =cut
 
 sub list {
     my ($self) = @_;
-    
+
     seek($self->data, 0, SEEK_SET) or
         return confess "Can't seek(): $!";
 

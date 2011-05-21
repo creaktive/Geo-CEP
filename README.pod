@@ -1,3 +1,5 @@
+=encoding utf8
+
 =head1 NAME
 
 Geo::CEP - Resolve Brazilian city data for a given CEP
@@ -66,7 +68,7 @@ Retorna I<0> quando não foi possível encontrar.
 
 =head2 list()
 
-=encoding utf8
+Retorna I<HashRef> com os dados de todas as cidades.
 
 =for Pod::Coverage BUILD
 DEMOLISH
