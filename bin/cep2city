@@ -1,0 +1,58 @@
+#!/usr/bin/perl
+# ABSTRACT: Returns city data for a given CEP
+# PODNAME: cep2city
+
+eval 'exec /usr/bin/perl -S $0 ${1+"$@"}'   ## no critic
+    if 0;                                   # not running under some shell
+
+=head1 SYNOPSIS
+
+cep2city CEP [ CEP2 CEP3 ... ]
+
+=head1 DESCRIPTION
+
+Prints available details for a given CEP number:
+
+    $ cep2city.pl 12420-010
+    cep       	12420010
+    city      	Pindamonhangaba
+    ddd       	12
+    lat       	-22.9166667
+    lon       	-45.4666667
+    state     	SP
+    state_long	São Paulo
+
+=head1 SEE ALSO
+
+=for :list
+* L<Geo::CEP>
+* L<WWW::Correios::CEP>
+
+=cut
+
+use common::sense;
+use open ':locale';
+use strict;
+
+use Geo::CEP;
+use Pod::Usage;
+
+our $VERSION = '1.0';
+
+pod2usage(
+    -exitval    => 0,
+    -verbose    => 99,
+) unless @ARGV;
+
+my $gc = new Geo::CEP;
+
+for my $cep (@ARGV) {
+    $cep =~ s/\D//g;
+    if ($cep && (my $r = $gc->find($cep))) {
+        $r->{cep} = $cep;
+        printf "%-10s\t%s\n", $_, $r->{$_} for sort keys %{$r};
+        print "\n";
+    } else {
+        printf STDERR "'%s' not found!\n", $cep;
+    }
+}

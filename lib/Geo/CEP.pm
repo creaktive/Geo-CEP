@@ -2,6 +2,9 @@
 package Geo::CEP;
 # ABSTRACT: Resolve Brazilian city data for a given CEP
 
+=for test_synopsis
+my ($VAR1);
+
 =head1 SYNOPSIS
 
     use Data::Dumper;
@@ -78,7 +81,7 @@ has states  => (
 
 use constant IDX_LEN    => length(pack('N*', 1 .. 2));
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 =for Pod::Coverage
 BUILD
@@ -208,6 +211,7 @@ sub list {
 =head1 SEE ALSO
 
 =for :list
+* L<cep2city>
 * L<WWW::Correios::CEP>
 
 =cut

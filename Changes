@@ -1,1 +1,7 @@
-0.1 - first release
+Changelog for Geo::CEP
+
+0.2     2011-05-23
+ * added 'cep2city' utility
+
+0.1     2011-05-20
+ * first release
