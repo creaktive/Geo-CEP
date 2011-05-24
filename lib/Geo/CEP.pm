@@ -40,6 +40,8 @@ use File::ShareDir qw(dist_file);
 use Moose;
 use Text::CSV;
 
+# VERSION
+
 has csv     => (is => 'ro', isa => 'Text::CSV', default => sub { new Text::CSV }, lazy => 1);
 has data    => (is => 'rw', isa => 'FileHandle');
 has index   => (is => 'rw', isa => 'FileHandle');
@@ -78,10 +80,7 @@ has states  => (
         TO  => 'Tocantins',
     }}
 );
-
-use constant IDX_LEN    => length(pack('N*', 1 .. 2));
-
-our $VERSION = '0.2';
+has idx_len => (is => 'ro', isa => 'Int', default => sub { length(pack('N*', 1 .. 2)) });
 
 =for Pod::Coverage
 BUILD
@@ -106,8 +105,8 @@ sub BUILD {
     my $size = sysseek($index, 0, SEEK_END)
         or return confess "Can't tell(): $!";
 
-    return confess 'Inconsistent index size' if not $size or ($size % IDX_LEN);
-    $self->length($size / IDX_LEN);
+    return confess 'Inconsistent index size' if not $size or ($size % $self->idx_len);
+    $self->length($size / $self->idx_len);
 }
 
 sub DEMOLISH {
@@ -121,10 +120,10 @@ sub get_idx {
     my ($self, $n) = @_;
 
     my $buf = '';
-    sysseek($self->index, $n * IDX_LEN, SEEK_SET)
+    sysseek($self->index, $n * $self->idx_len, SEEK_SET)
         or return confess "Can't seek(): $!";
 
-    sysread($self->index, $buf, IDX_LEN)
+    sysread($self->index, $buf, $self->idx_len)
         or return confess "Can't read(): $!";
     my ($cep, $offset) = unpack('N*', $buf);
 

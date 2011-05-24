@@ -6,7 +6,7 @@ Geo::CEP - Resolve Brazilian city data for a given CEP
 
 =head1 VERSION
 
-version 0.2
+version 0.3
 
 =head1 SYNOPSIS
 

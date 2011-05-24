@@ -34,10 +34,10 @@ use common::sense;
 use open ':locale';
 use strict;
 
+# VERSION
+
 use Geo::CEP;
 use Pod::Usage;
-
-our $VERSION = '1.0';
 
 pod2usage(
     -exitval    => 0,
