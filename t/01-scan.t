@@ -1,7 +1,7 @@
 #!perl -T
 use strict;
 
-use open ':locale';
+use open qw(:std :utf8);
 use Test::More;
 
 BEGIN {
@@ -17,6 +17,11 @@ my $benchmark = timediff(new Benchmark, new Benchmark);
 isa_ok($benchmark, 'Benchmark');
 
 my $list = $gc->list;
+
+my $size = scalar keys %{$list};
+ok($size == 9608, 'database size');
+diag("database has $size cities");
+
 my $i = 0;
 while (my ($name, $row) = each %{$list}) {
     my $test = $row->{cep_initial} + int(rand($row->{cep_final} - $row->{cep_initial}));
@@ -40,4 +45,4 @@ while (my ($name, $row) = each %{$list}) {
 diag('benchmark: ' . timestr($benchmark));
 diag(sprintf('speed: %0.2f queries/second', $i / ($benchmark->[1] + $benchmark->[2])));
 
-done_testing(5 + ($i * 7));
+done_testing(6 + ($i * 7));

@@ -83,6 +83,9 @@ has states  => (
 has idx_len => (is => 'ro', isa => 'Int', default => sub { length(pack('N*', 1 .. 2)) });
 
 =for Pod::Coverage
+O_RDONLY
+SEEK_END
+SEEK_SET
 BUILD
 DEMOLISH
 get_idx

@@ -31,7 +31,7 @@ Prints available details for a given CEP number:
 =cut
 
 use common::sense;
-use open ':locale';
+use open qw(:std :utf8);
 use strict;
 
 # VERSION
