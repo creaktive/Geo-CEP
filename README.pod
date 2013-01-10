@@ -105,7 +105,19 @@ L<cep2city>
 
 =item *
 
+L<Business::BR::CEP>
+
+=item *
+
 L<WWW::Correios::CEP>
+
+=item *
+
+L<WWW::Correios::PrecoPrazo>
+
+=item *
+
+L<WWW::Correios::SRO>
 
 =back
 
@@ -113,11 +125,11 @@ L<WWW::Correios::CEP>
 
 =over 4
 
+=item *
 
+L<Blabos de Blebe|https://metacpan.org/author/BLABOS>
 
 =back
-
-* L<Blabos de Blebe|https://metacpan.org/author/BLABOS>
 
 =head1 AUTHOR
 

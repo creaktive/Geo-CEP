@@ -250,12 +250,14 @@ sub list {
 
 =for :list
 * L<cep2city>
+* L<Business::BR::CEP>
 * L<WWW::Correios::CEP>
+* L<WWW::Correios::PrecoPrazo>
+* L<WWW::Correios::SRO>
 
 =head1 CONTRIBUTORS
 
 =for :list
-
 * L<Blabos de Blebe|https://metacpan.org/author/BLABOS>
 
 =cut
