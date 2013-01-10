@@ -28,9 +28,28 @@ is($gc->find(0), 0, 'non-existent CEP');
 is($gc->find(-1), 0, 'below valid CEP');
 is($gc->find(999_999_999), 0, 'above valid CEP');
 
+is_deeply(
+    $gc->find(12420010),
+    {
+        city        => 'Pindamonhangaba',
+        ddd         => 12,
+        lat         => -22.9166667,
+        lon         => -45.4666667,
+        state       => 'SP',
+        state_long  => 'São Paulo',
+    },
+    'CEP 12420010',
+);
+
 my $i = 0;
 while (my ($name, $row) = each %{$list}) {
     my $test = $row->{cep_initial} + int(rand($row->{cep_final} - $row->{cep_initial}));
+    delete $row->{$_} for qw(cep_initial cep_final);
+    $row->{$_} =
+        $row->{$_}
+            ? 0 + sprintf('%.7f', $row->{$_})
+            : ''
+        for qw(lat lon);
 
     my $t0      = Benchmark->new;
     my $r       = $gc->find($test);
@@ -40,11 +59,7 @@ while (my ($name, $row) = each %{$list}) {
     is(ref($r), 'HASH', 'found');
     next unless $r;
 
-    is(
-        $r->{$_},
-        $row->{$_},
-        sprintf('%s mismatch: "%s" != "%s"', $_, $r->{$_}, $row->{$_})
-    ) for qw(state state_long ddd city lat lon);
+    is_deeply($row => $r);
 } continue {
     ++$i;
 }
@@ -52,4 +67,4 @@ while (my ($name, $row) = each %{$list}) {
 diag('benchmark: ' . timestr($benchmark));
 diag(sprintf('speed: %0.2f queries/second', $i / ($benchmark->[1] + $benchmark->[2])));
 
-done_testing(9 + ($i * 7));
+done_testing(10 + ($i * 2));

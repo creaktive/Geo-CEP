@@ -8,26 +8,28 @@ Geo::CEP - Resolve Brazilian city data for a given CEP
 
 =head1 VERSION
 
-version 0.5
+version 0.6
 
 =head1 SYNOPSIS
 
-    use Data::Dumper;
+    use common::sense;
+    use utf8::all;
+
+    use Data::Printer;
     use Geo::CEP;
 
-    my $gc = new Geo::CEP;
-    print Dumper $gc->find("12420-010");
+    my $gc = Geo::CEP->new;
+    p $gc->find("12420-010");
 
-Produz:
-
-    $VAR1 = {
-              'state_long' => "S\x{e3}o Paulo",
-              'city' => 'Pindamonhangaba',
-              'lat' => '-22.9166667',
-              'lon' => '-45.4666667',
-              'ddd' => '12',
-              'state' => 'SP'
-            };
+    # Saída:
+    # \ {
+    #     city         "Pindamonhangaba",
+    #     ddd          12,
+    #     lat          -22.9166667,
+    #     lon          -45.4666667,
+    #     state        "SP",
+    #     state_long   "São Paulo"
+    # }
 
 =head1 DESCRIPTION
 
@@ -37,6 +39,18 @@ Diferentemente do L<WWW::Correios::CEP>, consulta os dados armazenados localment
 Por um lado, isso faz L<Geo::CEP> ser extremamente rápido (5 mil consultas por segundo); por outro, somente as informações à nível de cidade são retornadas.
 
 =head1 ATTRIBUTES
+
+=head2 data, index
+
+I<FileHandle> para os respectivos arquivos.
+
+=head2 length
+
+Tamanho do índice.
+
+=head2 offset
+
+Última posição dentro do CSV; uso interno.
 
 =head2 states
 
@@ -90,7 +104,12 @@ Retorna I<0> quando não foi possível encontrar.
 
 Retorna I<HashRef> com os dados de todas as cidades.
 
-=for test_synopsis my ($VAR1);
+=begin test_synopsis
+
+
+
+
+=end test_synopsis
 
 =for Pod::Coverage BUILD
 DEMOLISH

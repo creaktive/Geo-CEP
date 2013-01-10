@@ -2,26 +2,27 @@ package Geo::CEP;
 # ABSTRACT: Resolve Brazilian city data for a given CEP
 
 =for test_synopsis
-my ($VAR1);
 
 =head1 SYNOPSIS
 
-    use Data::Dumper;
+    use common::sense;
+    use utf8::all;
+
+    use Data::Printer;
     use Geo::CEP;
 
-    my $gc = new Geo::CEP;
-    print Dumper $gc->find("12420-010");
+    my $gc = Geo::CEP->new;
+    p $gc->find("12420-010");
 
-Produz:
-
-    $VAR1 = {
-              'state_long' => "S\x{e3}o Paulo",
-              'city' => 'Pindamonhangaba',
-              'lat' => '-22.9166667',
-              'lon' => '-45.4666667',
-              'ddd' => '12',
-              'state' => 'SP'
-            };
+    # Saída:
+    # \ {
+    #     city         "Pindamonhangaba",
+    #     ddd          12,
+    #     lat          -22.9166667,
+    #     lon          -45.4666667,
+    #     state        "SP",
+    #     state_long   "São Paulo"
+    # }
 
 =head1 DESCRIPTION
 
@@ -43,15 +44,37 @@ use Fcntl qw(SEEK_END SEEK_SET O_RDONLY);
 use File::ShareDir qw(dist_file);
 use Moo;
 use MooX::Types::MooseLike::Base qw(:all);
+use Scalar::Util qw(looks_like_number);
 use Text::CSV;
 
 # VERSION
 
 has csv     => (is => 'ro', isa => InstanceOf['Text::CSV'], default => sub { Text::CSV->new }, lazy => 1);
-has data    => (is => 'rw', isa => FileHandle);
-has index   => (is => 'rw', isa => FileHandle);
-has length  => (is => 'rw', isa => Int, default => sub { 0 });
-has offset  => (is => 'rw', isa => Int, default => sub { 0 });
+
+=attr data, index
+
+I<FileHandle> para os respectivos arquivos.
+
+=cut
+
+has data    => (is => 'rwp', isa => FileHandle);
+has index   => (is => 'rwp', isa => FileHandle);
+
+=attr length
+
+Tamanho do índice.
+
+=cut
+
+has length  => (is => 'rwp', isa => Int, default => sub { 0 });
+
+=attr offset
+
+Última posição dentro do CSV; uso interno.
+
+=cut
+
+has offset  => (is => 'rwp', isa => Int, default => sub { 0 });
 
 =attr states
 
@@ -113,18 +136,19 @@ sub BUILD {
 
     ## no critic (RequireBriefOpen)
     open(my $data, '<:encoding(latin1)', dist_file('Geo-CEP', 'cep.csv'))
-        or return confess "Error opening CSV: $!";
-    $self->data($data);
+        or confess "Error opening CSV: $!";
+    $self->_set_data($data);
 
     sysopen(my $index, dist_file('Geo-CEP', 'cep.idx'), O_RDONLY)
-        or return confess "Error opening index: $!";
-    $self->index($index);
+        or confess "Error opening index: $!";
+    $self->_set_index($index);
 
     my $size = sysseek($index, 0, SEEK_END)
-        or return confess "Can't tell(): $!";
+        or confess "Can't tell(): $!";
 
-    return confess 'Inconsistent index size' if not $size or ($size % $self->idx_len);
-    $self->length($size / $self->idx_len);
+    confess 'Inconsistent index size'
+        if not $size or ($size % $self->idx_len);
+    $self->_set_length($size / $self->idx_len);
 
     return;
 }
@@ -149,13 +173,13 @@ sub get_idx {
 
     my $buf = '';
     sysseek($self->index, $n * $self->idx_len, SEEK_SET)
-        or return confess "Can't seek(): $!";
+        or confess "Can't seek(): $!";
 
     sysread($self->index, $buf, $self->idx_len)
-        or return confess "Can't read(): $!";
+        or confess "Can't read(): $!";
     my ($cep, $offset) = unpack('N*', $buf);
 
-    $self->offset($offset);
+    $self->_set_offset($offset);
 
     return $cep;
 }
@@ -211,10 +235,17 @@ sub find {
     $cep =~ s/\D//gx;
     if ($self->bsearch($self->length - 1, $cep)) {
         seek($self->data, $self->offset, SEEK_SET) or
-            return confess "Can't seek(): $!";
+            confess "Can't seek(): $!";
+
+        no integer;
 
         my $row = $self->csv->getline_hr($self->data);
-        my %res = map { $_ => $row->{$_} } qw(state city ddd lat lon);
+        my %res = map {
+            $_ =>
+                looks_like_number($row->{$_})
+                    ? 0 + sprintf('%.7f', $row->{$_})
+                    : $row->{$_}
+        } qw(state city ddd lat lon);
         $res{state_long}= $self->states->{$res{state}};
 
         return \%res;
@@ -233,7 +264,7 @@ sub list {
     my ($self) = @_;
 
     seek($self->data, 0, SEEK_SET) or
-        return confess "Can't seek(): $!";
+        confess "Can't seek(): $!";
 
     my %list;
     while (my $row = $self->csv->getline_hr($self->data)) {
