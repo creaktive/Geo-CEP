@@ -147,7 +147,8 @@ sub BUILD {
         or confess "Can't tell(): $!";
 
     confess 'Inconsistent index size'
-        if not $size or ($size % $self->idx_len);
+        if not $size or
+        ($size % $self->idx_len);
     $self->_set_length($size / $self->idx_len);
 
     return;

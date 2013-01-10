@@ -36,9 +36,9 @@ is_deeply(
         lat         => -22.9166667,
         lon         => -45.4666667,
         state       => 'SP',
-        state_long  => 'São Paulo',
+        state_long  => join(' ', map { ucfirst lc } qw(SÃO PAULO)),
     },
-    'CEP 12420010',
+    'CEP 12420010 w/Unicode',
 );
 
 my $i = 0;
@@ -59,7 +59,7 @@ while (my ($name, $row) = each %{$list}) {
     is(ref($r), 'HASH', 'found');
     next unless $r;
 
-    is_deeply($row => $r);
+    is_deeply($row => $r, "CEP $test");
 } continue {
     ++$i;
 }
