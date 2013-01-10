@@ -36,21 +36,32 @@ use strict;
 use utf8;
 use warnings qw(all);
 
+use integer;
+
+use Carp qw(confess);
 use Fcntl qw(SEEK_END SEEK_SET O_RDONLY);
 use File::ShareDir qw(dist_file);
-use Moose;
+use Moo;
+use MooX::Types::MooseLike::Base qw(:all);
 use Text::CSV;
 
 # VERSION
 
-has csv     => (is => 'ro', isa => 'Text::CSV', default => sub { Text::CSV->new }, lazy => 1);
-has data    => (is => 'rw', isa => 'FileHandle');
-has index   => (is => 'rw', isa => 'FileHandle');
-has length  => (is => 'rw', isa => 'Int', default => 0);
-has offset  => (is => 'rw', isa => 'Int', default => 0);
+has csv     => (is => 'ro', isa => InstanceOf['Text::CSV'], default => sub { Text::CSV->new }, lazy => 1);
+has data    => (is => 'rw', isa => FileHandle);
+has index   => (is => 'rw', isa => FileHandle);
+has length  => (is => 'rw', isa => Int, default => sub { 0 });
+has offset  => (is => 'rw', isa => Int, default => sub { 0 });
+
+=attr states
+
+Mapeamento de código de estado para o nome do estado (C<AC =E<gt> 'Acre'>).
+
+=cut
+
 has states  => (
     is      => 'ro',
-    isa     => 'HashRef[Str]',
+    isa     => HashRef[Str],
     default => sub {{
         AC  => 'Acre',
         AL  => 'Alagoas',
@@ -81,16 +92,18 @@ has states  => (
         TO  => 'Tocantins',
     }}
 );
-has idx_len => (is => 'ro', isa => 'Int', default => sub { length(pack('N*', 1 .. 2)) });
+
+=attr idx_len
+
+Tamanho do registro de índice.
+
+=cut
+
+has idx_len => (is => 'ro', isa => Int, default => sub { length(pack('N*', 1 .. 2)) });
 
 =for Pod::Coverage
-O_RDONLY
-SEEK_END
-SEEK_SET
 BUILD
 DEMOLISH
-get_idx
-bsearch
 =cut
 
 sub BUILD {
@@ -125,6 +138,12 @@ sub DEMOLISH {
     return;
 }
 
+=method get_idx($n)
+
+Retorna a posição no arquivo CSV; uso interno.
+
+=cut
+
 sub get_idx {
     my ($self, $n) = @_;
 
@@ -140,6 +159,12 @@ sub get_idx {
 
     return $cep;
 }
+
+=method bsearch($hi, $val)
+
+Efetua a busca binária (implementação não-recursiva); uso interno.
+
+=cut
 
 sub bsearch {
     my ($self, $hi, $val) = @_;
@@ -159,12 +184,14 @@ sub bsearch {
         }
     }
 
-    return ($cep > $val) ? $self->get_idx($mid - 1) : $cep;
+    return ($cep > $val)
+        ? $self->get_idx($mid - 1)
+        : $cep;
 }
 
-=method find( CEP )
+=method find($cep)
 
-Busca por CEP (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
+Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
 
 =for :list
 * I<state>: sigla da Unidade Federativa (SP, RJ, MG);

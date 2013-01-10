@@ -36,11 +36,29 @@ Obtém os dados como: nome da cidade, do estado, número DDD e latitude/longitud
 Diferentemente do L<WWW::Correios::CEP>, consulta os dados armazenados localmente.
 Por um lado, isso faz L<Geo::CEP> ser extremamente rápido (5 mil consultas por segundo); por outro, somente as informações à nível de cidade são retornadas.
 
+=head1 ATTRIBUTES
+
+=head2 states
+
+Mapeamento de código de estado para o nome do estado (C<AC =E<gt> 'Acre'>).
+
+=head2 idx_len
+
+Tamanho do registro de índice.
+
 =head1 METHODS
 
-=head2 find( CEP )
+=head2 get_idx($n)
 
-Busca por CEP (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
+Retorna a posição no arquivo CSV; uso interno.
+
+=head2 bsearch($hi, $val)
+
+Efetua a busca binária (implementação não-recursiva); uso interno.
+
+=head2 find($cep)
+
+Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
 
 =over 4
 
@@ -74,13 +92,8 @@ Retorna I<HashRef> com os dados de todas as cidades.
 
 =for test_synopsis my ($VAR1);
 
-=for Pod::Coverage O_RDONLY
-SEEK_END
-SEEK_SET
-BUILD
+=for Pod::Coverage BUILD
 DEMOLISH
-get_idx
-bsearch
 
 =head1 SEE ALSO
 
