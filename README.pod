@@ -98,7 +98,7 @@ I<lat>/I<lon>: coordenadas geográficas da cidade (podem estar vazias).
 
 =back
 
-Retorna I<0> quando não foi possível encontrar.
+Retorna C<undef> quando não foi possível encontrar.
 
 =head2 list()
 

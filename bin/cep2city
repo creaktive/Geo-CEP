@@ -47,7 +47,7 @@ my $gc = Geo::CEP->new;
 
 for my $cep (@ARGV) {
     $cep =~ s/\D//gx;
-    if ($cep && (my $r = $gc->find($cep))) {
+    if ($cep && defined(my $r = $gc->find($cep))) {
         $r->{cep} = $cep;
         printf "%-10s\t%s\n", $_, $r->{$_} for sort keys %{$r};
         print "\n";

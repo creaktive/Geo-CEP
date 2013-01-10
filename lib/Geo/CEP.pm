@@ -227,7 +227,7 @@ Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef
 * I<ddd>: código DDD (pode estar vazio);
 * I<lat>/I<lon>: coordenadas geográficas da cidade (podem estar vazias).
 
-Retorna I<0> quando não foi possível encontrar.
+Retorna C<undef> quando não foi possível encontrar.
 
 =cut
 
@@ -251,7 +251,7 @@ sub find {
 
         return \%res;
     } else {
-        return 0;
+        return;
     }
 }
 

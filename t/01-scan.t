@@ -24,9 +24,9 @@ my $size = scalar keys %{$list};
 is($size, 9608, 'database size');
 diag("database has $size cities");
 
-is($gc->find(0), 0, 'non-existent CEP');
-is($gc->find(-1), 0, 'below valid CEP');
-is($gc->find(999_999_999), 0, 'above valid CEP');
+is($gc->find(0), undef, 'non-existent CEP');
+is($gc->find(-1), undef, 'below valid CEP');
+is($gc->find(999_999_999), undef, 'above valid CEP');
 
 is_deeply(
     $gc->find(12420010),
