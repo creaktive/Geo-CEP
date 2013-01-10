@@ -1,13 +1,12 @@
 #!perl
 use strict;
+no utf8;
+use warnings qw(all);
 
-use Config;
 use Test::More tests => 1;
 
 local $/ = undef;
-my $buf = <DATA>;
-
-ok(`$Config{perlpath} bin/cep2city 12420-010` eq $buf, 'bin script');
+is(`$^X bin/cep2city 12420-010`, <DATA>, 'bin script');
 
 __DATA__
 cep       	12420010

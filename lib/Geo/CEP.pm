@@ -38,7 +38,7 @@ use warnings qw(all);
 
 use integer;
 
-use Carp qw(confess);
+use Carp qw(carp confess);
 use Fcntl qw(SEEK_END SEEK_SET O_RDONLY);
 use File::ShareDir qw(dist_file);
 use Moo;
@@ -170,7 +170,9 @@ sub bsearch {
     my ($self, $hi, $val) = @_;
     my ($lo, $cep, $mid) = qw(0 0 0);
 
-    return 0 if ($self->get_idx($lo) > $val) or ($self->get_idx($hi) < $val);
+    return 0 if
+        ($self->get_idx($lo) > $val) or
+        ($self->get_idx($hi) < $val);
 
     while ($lo <= $hi) {
         $mid = int(($lo + $hi) / 2);
@@ -238,7 +240,8 @@ sub list {
         $row->{state_long} = $self->states->{$row->{state}};
         $list{$row->{city} . '/' . $row->{state}} = $row;
     }
-    $self->csv->eof or $self->csv->error_diag;
+    $self->csv->eof
+        or carp $self->csv->error_diag;
 
     return \%list;
 }
@@ -248,6 +251,12 @@ sub list {
 =for :list
 * L<cep2city>
 * L<WWW::Correios::CEP>
+
+=head1 CONTRIBUTORS
+
+=for :list
+
+* L<Blabos de Blebe|https://metacpan.org/author/BLABOS>
 
 =cut
 

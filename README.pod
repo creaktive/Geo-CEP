@@ -109,6 +109,16 @@ L<WWW::Correios::CEP>
 
 =back
 
+=head1 CONTRIBUTORS
+
+=over 4
+
+
+
+=back
+
+* L<Blabos de Blebe|https://metacpan.org/author/BLABOS>
+
 =head1 AUTHOR
 
 Stanislaw Pusep <stas@sysd.org>
