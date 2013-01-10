@@ -8,6 +8,7 @@ use open qw(:locale);
 use Test::More tests => 1;
 
 local $/ = undef;
+binmode \*DATA, ':encoding(utf8)';
 is(qx($^X bin/cep2city 12420-010), <DATA>, 'bin script');
 
 __DATA__
