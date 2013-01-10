@@ -1,9 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # ABSTRACT: Returns city data for a given CEP
 # PODNAME: cep2city
-
-eval 'exec /usr/bin/perl -S $0 ${1+"$@"}'   ## no critic
-    if 0;                                   # not running under some shell
 
 =head1 SYNOPSIS
 
@@ -30,9 +27,11 @@ Prints available details for a given CEP number:
 
 =cut
 
-use common::sense;
-use open qw(:std :utf8);
 use strict;
+use utf8;
+use warnings qw(all);
+
+use open qw(:std :utf8);
 
 # VERSION
 
@@ -44,10 +43,10 @@ pod2usage(
     -verbose    => 99,
 ) unless @ARGV;
 
-my $gc = new Geo::CEP;
+my $gc = Geo::CEP->new;
 
 for my $cep (@ARGV) {
-    $cep =~ s/\D//g;
+    $cep =~ s/\D//gx;
     if ($cep && (my $r = $gc->find($cep))) {
         $r->{cep} = $cep;
         printf "%-10s\t%s\n", $_, $r->{$_} for sort keys %{$r};

@@ -1,4 +1,3 @@
-#!/usr/bin/perl
 package Geo::CEP;
 # ABSTRACT: Resolve Brazilian city data for a given CEP
 
@@ -33,7 +32,9 @@ Por um lado, isso faz L<Geo::CEP> ser extremamente rápido (5 mil consultas por 
 
 =cut
 
-use common::sense;
+use strict;
+use utf8;
+use warnings qw(all);
 
 use Fcntl qw(SEEK_END SEEK_SET O_RDONLY);
 use File::ShareDir qw(dist_file);
@@ -42,7 +43,7 @@ use Text::CSV;
 
 # VERSION
 
-has csv     => (is => 'ro', isa => 'Text::CSV', default => sub { new Text::CSV }, lazy => 1);
+has csv     => (is => 'ro', isa => 'Text::CSV', default => sub { Text::CSV->new }, lazy => 1);
 has data    => (is => 'rw', isa => 'FileHandle');
 has index   => (is => 'rw', isa => 'FileHandle');
 has length  => (is => 'rw', isa => 'Int', default => 0);
@@ -97,6 +98,7 @@ sub BUILD {
 
     $self->csv->column_names([qw(cep_initial cep_final state city ddd lat lon)]);
 
+    ## no critic (RequireBriefOpen)
     open(my $data, '<:encoding(latin1)', dist_file('Geo-CEP', 'cep.csv'))
         or return confess "Error opening CSV: $!";
     $self->data($data);
@@ -110,6 +112,8 @@ sub BUILD {
 
     return confess 'Inconsistent index size' if not $size or ($size % $self->idx_len);
     $self->length($size / $self->idx_len);
+
+    return;
 }
 
 sub DEMOLISH {
@@ -117,6 +121,8 @@ sub DEMOLISH {
 
     close $self->data;
     close $self->index;
+
+    return;
 }
 
 sub get_idx {
@@ -173,7 +179,7 @@ Retorna I<0> quando não foi possível encontrar.
 
 sub find {
     my ($self, $cep) = @_;
-    $cep =~ s/\D//g;
+    $cep =~ s/\D//gx;
     if ($self->bsearch($self->length - 1, $cep)) {
         seek($self->data, $self->offset, SEEK_SET) or
             return confess "Can't seek(): $!";

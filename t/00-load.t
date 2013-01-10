@@ -1,10 +1,12 @@
-#!perl -T
+#!perl
 use strict;
+use utf8;
+use warnings qw(all);
 
 use Test::More tests => 1;
 
 BEGIN {
-    use_ok('Geo::CEP');
-}
+    use_ok(q(Geo::CEP));
+};
 
-diag("Testing Geo::CEP $Geo::CEP::VERSION, Perl $], $^X");
+diag(qq(Geo::CEP v$Geo::CEP::VERSION, Perl $], $^X));

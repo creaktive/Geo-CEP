@@ -1,6 +1,8 @@
 .build/*
 Geo-CEP-*/*
 blib/*
+*.bak
 *.gz
 Makefile
 pm_to_blib
+nytprof*
