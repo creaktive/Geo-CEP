@@ -31,8 +31,6 @@ use strict;
 use utf8;
 use warnings qw(all);
 
-use open qw(:locale);
-
 # VERSION
 
 use Geo::CEP;
