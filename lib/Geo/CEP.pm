@@ -235,7 +235,8 @@ sub fetch_row {
     no integer;
 
     my $row = $self->csv->getline_hr($self->data);
-    return if $self->csv->eof;
+    return if 'HASH' ne ref $row;
+
     my %res = map {
         $_ =>
             looks_like_number($row->{$_})
@@ -291,6 +292,8 @@ sub list {
     while (my $row = $self->fetch_row(qw(cep_initial cep_final))) {
         $list{$row->{city} . '/' . $row->{state}} = $row;
     }
+    $self->csv->eof
+        or croak $self->csv->error_diag;
 
     return \%list;
 }
