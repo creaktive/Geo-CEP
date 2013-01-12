@@ -45,11 +45,6 @@ my $i = 0;
 while (my ($name, $row) = each %{$list}) {
     my $test = $row->{cep_initial} + int(rand($row->{cep_final} - $row->{cep_initial}));
     delete $row->{$_} for qw(cep_initial cep_final);
-    $row->{$_} =
-        $row->{$_}
-            ? 0 + sprintf('%.7f', $row->{$_})
-            : ''
-        for qw(lat lon);
 
     my $t0      = Benchmark->new;
     my $r       = $gc->find($test);

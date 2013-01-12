@@ -216,6 +216,31 @@ sub bsearch {
         : $cep;
 }
 
+=method fetch_row(@extra)
+
+Lê e formata o registro a partir do F<cep.csv>; uso interno.
+
+=cut
+
+## no critic (RequireArgUnpacking)
+sub fetch_row {
+    my ($self, @fields) = (@_, qw(state city ddd lat lon));
+
+    no integer;
+
+    my $row = $self->csv->getline_hr($self->data);
+    return if $self->csv->eof;
+    my %res = map {
+        $_ =>
+            looks_like_number($row->{$_})
+                ? 0 + sprintf('%.7f', $row->{$_})
+                : $row->{$_}
+    } @fields;
+    $res{state_long}= $self->states->{$res{state}};
+
+    return \%res;
+}
+
 =method find($cep)
 
 Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
@@ -238,18 +263,7 @@ sub find {
         seek($self->data, $self->offset, SEEK_SET) or
             confess "Can't seek(): $!";
 
-        no integer;
-
-        my $row = $self->csv->getline_hr($self->data);
-        my %res = map {
-            $_ =>
-                looks_like_number($row->{$_})
-                    ? 0 + sprintf('%.7f', $row->{$_})
-                    : $row->{$_}
-        } qw(state city ddd lat lon);
-        $res{state_long}= $self->states->{$res{state}};
-
-        return \%res;
+        return $self->fetch_row;
     } else {
         return;
     }
@@ -268,12 +282,9 @@ sub list {
         confess "Can't seek(): $!";
 
     my %list;
-    while (my $row = $self->csv->getline_hr($self->data)) {
-        $row->{state_long} = $self->states->{$row->{state}};
+    while (my $row = $self->fetch_row(qw(cep_initial cep_final))) {
         $list{$row->{city} . '/' . $row->{state}} = $row;
     }
-    $self->csv->eof
-        or carp $self->csv->error_diag;
 
     return \%list;
 }

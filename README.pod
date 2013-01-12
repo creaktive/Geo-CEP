@@ -8,7 +8,7 @@ Geo::CEP - Resolve Brazilian city data for a given CEP
 
 =head1 VERSION
 
-version 0.7
+version 0.8
 
 =head1 SYNOPSIS
 
@@ -69,6 +69,10 @@ Retorna a posição no arquivo CSV; uso interno.
 =head2 bsearch($hi, $val)
 
 Efetua a busca binária (implementação não-recursiva); uso interno.
+
+=head2 fetch_row(@extra)
+
+Lê e formata o registro a partir do F<cep.csv>; uso interno.
 
 =head2 find($cep)
 
