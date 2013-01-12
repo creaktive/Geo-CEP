@@ -172,26 +172,20 @@ my %cache;
 sub get_idx {
     my ($self, $n) = @_;
 
-    if (exists $cache{$n}) {
-        $self->_set_offset($cache{$n}->{offset});
-        return $cache{$n}->{cep};
+    unless (exists $cache{$n}) {
+        my $buf = '';
+        $self->index->sysseek($n * $self->idx_len, SEEK_SET)
+            or confess "Can't seek(): $!";
+
+        $self->index->sysread($buf, $self->idx_len)
+            or confess "Can't read(): $!";
+
+        $cache{$n} = [unpack('N*', $buf)];
     }
 
-    my $buf = '';
-    $self->index->sysseek($n * $self->idx_len, SEEK_SET)
-        or confess "Can't seek(): $!";
-
-    $self->index->sysread($buf, $self->idx_len)
-        or confess "Can't read(): $!";
-    my ($cep, $offset) = unpack('N*', $buf);
-
-    $cache{$n} = {
-        cep     => $cep,
-        offset  => $offset,
-    };
-
-    $self->_set_offset($offset);
-    return $cep;
+    return wantarray
+        ? @{$cache{$n}}
+        : $cache{$n}->[0];
 }
 
 =method bsearch($hi, $val)
@@ -220,9 +214,12 @@ sub bsearch {
         }
     }
 
-    return ($cep > $val)
-        ? $self->get_idx($mid - 1)
-        : $cep;
+    my $offset;
+    --$mid if $cep > $val;
+    ($cep, $offset) = $self->get_idx($mid);
+
+    $self->_set_offset($offset);
+    return $cep;
 }
 
 =method fetch_row(@extra)

@@ -41,6 +41,7 @@ is_deeply(
 );
 
 my $i = 0;
+srand 42;
 while (my ($name, $row) = each %{$list}) {
     my $test = $row->{cep_initial} + int(rand($row->{cep_final} - $row->{cep_initial}));
     delete $row->{$_} for qw(cep_initial cep_final);
