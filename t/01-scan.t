@@ -3,7 +3,6 @@ use strict;
 use utf8;
 use warnings qw(all);
 
-use open qw(:std :utf8);
 use Test::More;
 
 BEGIN {
@@ -11,7 +10,7 @@ BEGIN {
     use_ok('Geo::CEP');
 }
 
-my $gc = new Geo::CEP;
+my $gc = Geo::CEP->new;
 isa_ok($gc, 'Geo::CEP');
 can_ok($gc, qw(find list));
 

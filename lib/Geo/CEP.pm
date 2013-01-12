@@ -40,8 +40,8 @@ use warnings qw(all);
 use integer;
 
 use Carp qw(carp confess);
-use Fcntl qw(SEEK_END SEEK_SET O_RDONLY);
 use File::ShareDir qw(dist_file);
+use IO::File;
 use Moo;
 use MooX::Types::MooseLike::Base qw(:all);
 use Scalar::Util qw(looks_like_number);
@@ -134,16 +134,15 @@ sub BUILD {
 
     $self->csv->column_names([qw(cep_initial cep_final state city ddd lat lon)]);
 
-    ## no critic (RequireBriefOpen)
-    open(my $data, '<:encoding(latin1)', dist_file('Geo-CEP', 'cep.csv'))
-        or confess "Error opening CSV: $!";
+    my $data = IO::File->new(dist_file('Geo-CEP', 'cep.csv'), '<:encoding(latin1)');
+    confess "Error opening CSV: $!" unless defined $data;
     $self->_set_data($data);
 
-    sysopen(my $index, dist_file('Geo-CEP', 'cep.idx'), O_RDONLY)
-        or confess "Error opening index: $!";
+    my $index = IO::File->new(dist_file('Geo-CEP', 'cep.idx'), O_RDONLY);
+    confess "Error opening index: $!" unless defined $index;
     $self->_set_index($index);
 
-    my $size = sysseek($index, 0, SEEK_END)
+    my $size = $index->sysseek(0, SEEK_END)
         or confess "Can't tell(): $!";
 
     confess 'Inconsistent index size'
@@ -157,8 +156,8 @@ sub BUILD {
 sub DEMOLISH {
     my ($self) = @_;
 
-    close $self->data;
-    close $self->index;
+    $self->data->close;
+    $self->index->close;
 
     return;
 }
@@ -173,10 +172,10 @@ sub get_idx {
     my ($self, $n) = @_;
 
     my $buf = '';
-    sysseek($self->index, $n * $self->idx_len, SEEK_SET)
+    $self->index->sysseek($n * $self->idx_len, SEEK_SET)
         or confess "Can't seek(): $!";
 
-    sysread($self->index, $buf, $self->idx_len)
+    $self->index->sysread($buf, $self->idx_len)
         or confess "Can't read(): $!";
     my ($cep, $offset) = unpack('N*', $buf);
 
@@ -260,7 +259,7 @@ sub find {
     my ($self, $cep) = @_;
     $cep =~ s/\D//gx;
     if ($self->bsearch($self->length - 1, $cep)) {
-        seek($self->data, $self->offset, SEEK_SET) or
+        $self->data->seek($self->offset, SEEK_SET) or
             confess "Can't seek(): $!";
 
         return $self->fetch_row;
@@ -278,7 +277,7 @@ Retorna I<HashRef> com os dados de todas as cidades.
 sub list {
     my ($self) = @_;
 
-    seek($self->data, 0, SEEK_SET) or
+    $self->data->seek(0, SEEK_SET) or
         confess "Can't seek(): $!";
 
     my %list;
