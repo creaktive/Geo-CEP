@@ -168,8 +168,14 @@ Retorna a posição no arquivo CSV; uso interno.
 
 =cut
 
+my %cache;
 sub get_idx {
     my ($self, $n) = @_;
+
+    if (exists $cache{$n}) {
+        $self->_set_offset($cache{$n}->{offset});
+        return $cache{$n}->{cep};
+    }
 
     my $buf = '';
     $self->index->sysseek($n * $self->idx_len, SEEK_SET)
@@ -179,8 +185,12 @@ sub get_idx {
         or confess "Can't read(): $!";
     my ($cep, $offset) = unpack('N*', $buf);
 
-    $self->_set_offset($offset);
+    $cache{$n} = {
+        cep     => $cep,
+        offset  => $offset,
+    };
 
+    $self->_set_offset($offset);
     return $cep;
 }
 
