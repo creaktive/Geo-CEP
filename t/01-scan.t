@@ -30,6 +30,8 @@ is($gc->find(999_999_999), undef, 'above valid CEP');
 is_deeply(
     $gc->find(12420010),
     {
+        cep_initial => 12400000,
+        cep_final   => 12449999,
         city        => 'Pindamonhangaba',
         ddd         => 12,
         lat         => -22.9166667,
@@ -44,7 +46,6 @@ my $i = 0;
 srand 42;
 while (my ($name, $row) = each %{$list}) {
     my $test = $row->{cep_initial} + int(rand($row->{cep_final} - $row->{cep_initial}));
-    delete $row->{$_} for qw(cep_initial cep_final);
 
     my $t0      = Benchmark->new;
     my $r       = $gc->find($test);

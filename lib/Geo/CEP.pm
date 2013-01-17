@@ -16,6 +16,8 @@ package Geo::CEP;
 
     # Saída:
     # \ {
+    #     cep_final    12449999
+    #     cep_initial  12400000
     #     city         "Pindamonhangaba",
     #     ddd          12,
     #     lat          -22.9166667,
@@ -39,9 +41,10 @@ use warnings qw(all);
 
 use integer;
 
-use Carp qw(carp confess);
+use Carp qw(carp confess croak);
 use File::ShareDir qw(dist_file);
 use IO::File;
+use Memoize;
 use Moo;
 use MooX::Types::MooseLike::Base qw(:all);
 use Scalar::Util qw(looks_like_number);
@@ -68,61 +71,50 @@ Tamanho do índice.
 
 has length  => (is => 'rwp', isa => Int, default => sub { 0 });
 
-=attr offset
-
-Última posição dentro do CSV; uso interno.
-
-=cut
-
-has offset  => (is => 'rwp', isa => Int, default => sub { 0 });
-
 =attr states
 
 Mapeamento de código de estado para o nome do estado (C<AC =E<gt> 'Acre'>).
 
 =cut
 
+my %states = (
+    AC  => 'Acre',
+    AL  => 'Alagoas',
+    AM  => 'Amazonas',
+    AP  => 'Amapá',
+    BA  => 'Bahia',
+    CE  => 'Ceará',
+    DF  => 'Distrito Federal',
+    ES  => 'Espírito Santo',
+    GO  => 'Goiás',
+    MA  => 'Maranhão',
+    MG  => 'Minas Gerais',
+    MS  => 'Mato Grosso do Sul',
+    MT  => 'Mato Grosso',
+    PA  => 'Pará',
+    PB  => 'Paraíba',
+    PE  => 'Pernambuco',
+    PI  => 'Piauí',
+    PR  => 'Paraná',
+    RJ  => 'Rio de Janeiro',
+    RN  => 'Rio Grande do Norte',
+    RO  => 'Rondônia',
+    RR  => 'Roraima',
+    RS  => 'Rio Grande do Sul',
+    SC  => 'Santa Catarina',
+    SE  => 'Sergipe',
+    SP  => 'São Paulo',
+    TO  => 'Tocantins',
+);
+
 has states  => (
     is      => 'ro',
     isa     => HashRef[Str],
-    default => sub {{
-        AC  => 'Acre',
-        AL  => 'Alagoas',
-        AM  => 'Amazonas',
-        AP  => 'Amapá',
-        BA  => 'Bahia',
-        CE  => 'Ceará',
-        DF  => 'Distrito Federal',
-        ES  => 'Espírito Santo',
-        GO  => 'Goiás',
-        MA  => 'Maranhão',
-        MG  => 'Minas Gerais',
-        MS  => 'Mato Grosso do Sul',
-        MT  => 'Mato Grosso',
-        PA  => 'Pará',
-        PB  => 'Paraíba',
-        PE  => 'Pernambuco',
-        PI  => 'Piauí',
-        PR  => 'Paraná',
-        RJ  => 'Rio de Janeiro',
-        RN  => 'Rio Grande do Norte',
-        RO  => 'Rondônia',
-        RR  => 'Roraima',
-        RS  => 'Rio Grande do Sul',
-        SC  => 'Santa Catarina',
-        SE  => 'Sergipe',
-        SP  => 'São Paulo',
-        TO  => 'Tocantins',
-    }}
+    default => sub { \%states }
 );
 
-=attr idx_len
-
-Tamanho do registro de índice.
-
-=cut
-
-has idx_len => (is => 'ro', isa => Int, default => sub { length(pack('N*', 1 .. 2)) });
+# Tamanho do registro de índice.
+my $idx_len = length(pack('N*', 1 .. 2));
 
 =for Pod::Coverage
 BUILD
@@ -147,45 +139,33 @@ sub BUILD {
 
     confess 'Inconsistent index size'
         if not $size or
-        ($size % $self->idx_len);
-    $self->_set_length($size / $self->idx_len);
-
-    return;
-}
-
-sub DEMOLISH {
-    my ($self) = @_;
-
-    $self->data->close;
-    $self->index->close;
+        ($size % $idx_len);
+    $self->_set_length($size / $idx_len);
 
     return;
 }
 
 =method get_idx($n)
 
-Retorna a posição no arquivo CSV; uso interno.
+Retorna o registro no arquivo CSV; uso interno.
 
 =cut
 
-my %cache;
+memoize 'get_idx';
 sub get_idx {
-    my ($self, $n) = @_;
+    my ($self, $n, $lazy) = @_;
 
-    unless (exists $cache{$n}) {
-        my $buf = '';
-        $self->index->sysseek($n * $self->idx_len, SEEK_SET)
-            or confess "Can't seek(): $!";
+    my $buf = '';
+    $self->index->sysseek($n * $idx_len, SEEK_SET)
+        or confess "Can't seek(): $!";
 
-        $self->index->sysread($buf, $self->idx_len)
-            or confess "Can't read(): $!";
+    $self->index->sysread($buf, $idx_len)
+        or confess "Can't read(): $!";
 
-        $cache{$n} = [unpack('N*', $buf)];
-    }
-
-    return wantarray
-        ? @{$cache{$n}}
-        : $cache{$n}->[0];
+    my ($cep, $offset) = unpack('N*', $buf);
+    return defined $lazy
+        ? sub { $self->fetch_row($offset) }
+        : $cep;
 }
 
 =method bsearch($hi, $val)
@@ -194,13 +174,14 @@ Efetua a busca binária (implementação não-recursiva); uso interno.
 
 =cut
 
+memoize 'bsearch';
 sub bsearch {
     my ($self, $hi, $val) = @_;
     my ($lo, $cep, $mid) = qw(0 0 0);
 
-    return 0 if
-        ($self->get_idx($lo) > $val) or
-        ($self->get_idx($hi) < $val);
+    return
+        if ($self->get_idx($lo) > $val)
+        or ($self->get_idx($hi) < $val);
 
     while ($lo <= $hi) {
         $mid = int(($lo + $hi) / 2);
@@ -214,25 +195,24 @@ sub bsearch {
         }
     }
 
-    my $offset;
     --$mid if $cep > $val;
-    ($cep, $offset) = $self->get_idx($mid);
-
-    $self->_set_offset($offset);
-    return $cep;
+    return $self->get_idx($mid, 1);
 }
 
-=method fetch_row(@extra)
+=method fetch_row($offset)
 
 Lê e formata o registro a partir do F<cep.csv>; uso interno.
 
 =cut
 
-## no critic (RequireArgUnpacking)
+memoize 'fetch_row';
 sub fetch_row {
-    my ($self, @fields) = (@_, qw(state city ddd lat lon));
+    my ($self, $offset) = @_;
 
     no integer;
+
+    $self->data->seek($offset, SEEK_SET)
+        or confess "Can't seek(): $!";
 
     my $row = $self->csv->getline_hr($self->data);
     return if 'HASH' ne ref $row;
@@ -242,8 +222,9 @@ sub fetch_row {
             looks_like_number($row->{$_})
                 ? 0 + sprintf('%.7f', $row->{$_})
                 : $row->{$_}
-    } @fields;
-    $res{state_long}= $self->states->{$res{state}};
+    } qw(state city ddd lat lon cep_initial cep_final);
+    return unless defined $res{state};
+    $res{state_long}= $states{$res{state}};
 
     return \%res;
 }
@@ -263,14 +244,13 @@ Retorna C<undef> quando não foi possível encontrar.
 
 =cut
 
+memoize 'find';
 sub find {
     my ($self, $cep) = @_;
     $cep =~ s/\D//gx;
-    if ($self->bsearch($self->length - 1, $cep)) {
-        $self->data->seek($self->offset, SEEK_SET) or
-            confess "Can't seek(): $!";
-
-        return $self->fetch_row;
+    my $offset = $self->bsearch($self->length - 1, $cep);
+    if ('CODE' eq ref $offset) {
+        return $offset->();
     } else {
         return;
     }
@@ -285,12 +265,16 @@ Retorna I<HashRef> com os dados de todas as cidades.
 sub list {
     my ($self) = @_;
 
-    $self->data->seek(0, SEEK_SET) or
-        confess "Can't seek(): $!";
+    $self->index->sysseek(0, SEEK_SET)
+        or confess "Can't seek(): $!";
 
     my %list;
-    while (my $row = $self->fetch_row(qw(cep_initial cep_final))) {
-        $list{$row->{city} . '/' . $row->{state}} = $row;
+    my $buf;
+    while ($self->index->sysread($buf, $idx_len)) {
+        my (undef, $offset) = unpack('N*', $buf);
+        my $row = $self->fetch_row($offset);
+        $list{$row->{city} . '/' . $row->{state}} = $row
+            if defined $row;
     }
     $self->csv->eof
         or croak $self->csv->error_diag;

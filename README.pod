@@ -8,7 +8,7 @@ Geo::CEP - Resolve Brazilian city data for a given CEP
 
 =head1 VERSION
 
-version 0.8
+version 0.9
 
 =head1 SYNOPSIS
 
@@ -23,6 +23,8 @@ version 0.8
 
     # Saída:
     # \ {
+    #     cep_final    12449999
+    #     cep_initial  12400000
     #     city         "Pindamonhangaba",
     #     ddd          12,
     #     lat          -22.9166667,
@@ -48,29 +50,21 @@ I<FileHandle> para os respectivos arquivos.
 
 Tamanho do índice.
 
-=head2 offset
-
-Última posição dentro do CSV; uso interno.
-
 =head2 states
 
 Mapeamento de código de estado para o nome do estado (C<AC =E<gt> 'Acre'>).
-
-=head2 idx_len
-
-Tamanho do registro de índice.
 
 =head1 METHODS
 
 =head2 get_idx($n)
 
-Retorna a posição no arquivo CSV; uso interno.
+Retorna o registro no arquivo CSV; uso interno.
 
 =head2 bsearch($hi, $val)
 
 Efetua a busca binária (implementação não-recursiva); uso interno.
 
-=head2 fetch_row(@extra)
+=head2 fetch_row($offset)
 
 Lê e formata o registro a partir do F<cep.csv>; uso interno.
 
