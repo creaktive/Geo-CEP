@@ -9,7 +9,10 @@ package Geo::CEP;
     use utf8::all;
 
     use Data::Printer;
-    use Geo::CEP;
+
+    # 'memoize' é extremamente vantajoso em casos aonde a mesma
+    # instância é utilizada para resolver lotes grandes de CEPs
+    use Geo::CEP qw(memoize);
 
     my $gc = Geo::CEP->new;
     p $gc->find("12420-010");
@@ -113,12 +116,19 @@ has states  => (
     default => sub { \%states }
 );
 
-# Tamanho do registro de índice.
+=attr idx_len
+
+Tamanho do registro de índice.
+
+=cut
+
 my $idx_len = length(pack('N*', 1 .. 2));
+
+has idx_len => (is => 'ro', isa => Int, default => sub { $idx_len });
 
 =for Pod::Coverage
 BUILD
-DEMOLISH
+import
 =cut
 
 sub BUILD {
@@ -138,22 +148,26 @@ sub BUILD {
         or confess "Can't tell(): $!";
 
     confess 'Inconsistent index size'
-        if not $size or
-        ($size % $idx_len);
+        if not $size
+        or $size % $idx_len;
     $self->_set_length($size / $idx_len);
 
     return;
 }
 
-=method get_idx($n)
+sub import {
+    my (undef, @args) = @_;
 
-Retorna o registro no arquivo CSV; uso interno.
+    if (grep { $_ eq 'memoize' } @args) {
+        memoize $_
+            for qw(_bsearch _fetch_row _find _get_idx);
+    }
 
-=cut
-
-memoize 'get_idx';
-sub get_idx {
-    my ($self, $n, $lazy) = @_;
+    return;
+}
+# Retorna o registro no arquivo CSV; uso interno.
+sub _get_idx {
+    my ($self, $n, $want_offset) = @_;
 
     my $buf = '';
     $self->index->sysseek($n * $idx_len, SEEK_SET)
@@ -162,30 +176,24 @@ sub get_idx {
     $self->index->sysread($buf, $idx_len)
         or confess "Can't read(): $!";
 
-    my ($cep, $offset) = unpack('N*', $buf);
-    return defined $lazy
-        ? sub { $self->fetch_row($offset) }
+    my ($cep, $offset) = unpack 'N*' => $buf;
+    return defined $want_offset
+        ? $offset
         : $cep;
 }
 
-=method bsearch($hi, $val)
-
-Efetua a busca binária (implementação não-recursiva); uso interno.
-
-=cut
-
-memoize 'bsearch';
-sub bsearch {
+# Efetua a busca binária (implementação não-recursiva); uso interno.
+sub _bsearch {
     my ($self, $hi, $val) = @_;
     my ($lo, $cep, $mid) = qw(0 0 0);
 
     return
-        if ($self->get_idx($lo) > $val)
-        or ($self->get_idx($hi) < $val);
+        if ($self->_get_idx($lo) > $val)
+        or ($self->_get_idx($hi) < $val);
 
     while ($lo <= $hi) {
-        $mid = int(($lo + $hi) / 2);
-        $cep = $self->get_idx($mid);
+        $mid = ($lo + $hi) / 2;
+        $cep = $self->_get_idx($mid);
         if ($val < $cep) {
             $hi = $mid - 1;
         } elsif ($val > $cep) {
@@ -196,17 +204,12 @@ sub bsearch {
     }
 
     --$mid if $cep > $val;
-    return $self->get_idx($mid, 1);
+    return $self->_get_idx($mid, 1);
 }
 
-=method fetch_row($offset)
 
-Lê e formata o registro a partir do F<cep.csv>; uso interno.
-
-=cut
-
-memoize 'fetch_row';
-sub fetch_row {
+# Lê e formata o registro a partir do cep.csv; uso interno.
+sub _fetch_row {
     my ($self, $offset) = @_;
 
     no integer;
@@ -215,7 +218,9 @@ sub fetch_row {
         or confess "Can't seek(): $!";
 
     my $row = $self->csv->getline_hr($self->data);
-    return if 'HASH' ne ref $row;
+    return
+        if 'HASH' ne ref $row
+        or not defined $row->{state};
 
     my %res = map {
         $_ =>
@@ -223,7 +228,6 @@ sub fetch_row {
                 ? 0 + sprintf('%.7f', $row->{$_})
                 : $row->{$_}
     } qw(state city ddd lat lon cep_initial cep_final);
-    return unless defined $res{state};
     $res{state_long}= $states{$res{state}};
 
     return \%res;
@@ -234,6 +238,8 @@ sub fetch_row {
 Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
 
 =for :list
+* I<cep_initial>: o início da faixa de CEPs da cidade;
+* I<cep_final>: o término da faixa de CEP da cidade;
 * I<state>: sigla da Unidade Federativa (SP, RJ, MG);
 * I<state_long>: nome da Unidade Federativa (São Paulo, Rio de Janeiro, Minas Gerais);
 * I<city>: nome da cidade;
@@ -244,16 +250,20 @@ Retorna C<undef> quando não foi possível encontrar.
 
 =cut
 
-memoize 'find';
-sub find {
+sub _find {
     my ($self, $cep) = @_;
-    $cep =~ s/\D//gx;
-    my $offset = $self->bsearch($self->length - 1, $cep);
-    if ('CODE' eq ref $offset) {
-        return $offset->();
+    my $offset = $self->_bsearch($self->length - 1, $cep);
+    if (defined $offset) {
+        return $self->_fetch_row($offset);
     } else {
         return;
     }
+}
+
+sub find {
+    my ($self, $cep) = @_;
+    $cep =~ s/\D//gsx;
+    return $self->_find(substr($cep, 0, 8));
 }
 
 =method list()
@@ -271,8 +281,8 @@ sub list {
     my %list;
     my $buf;
     while ($self->index->sysread($buf, $idx_len)) {
-        my (undef, $offset) = unpack('N*', $buf);
-        my $row = $self->fetch_row($offset);
+        my (undef, $offset) = unpack 'N*' => $buf;
+        my $row = $self->_fetch_row($offset);
         $list{$row->{city} . '/' . $row->{state}} = $row
             if defined $row;
     }

@@ -7,7 +7,7 @@ use Test::More;
 
 BEGIN {
     use_ok('Benchmark', qw(timediff timestr timesum));
-    use_ok('Geo::CEP');
+    use_ok('Geo::CEP', qw(memoize));
 }
 
 my $gc = Geo::CEP->new;

@@ -16,7 +16,10 @@ version 0.9
     use utf8::all;
 
     use Data::Printer;
-    use Geo::CEP;
+
+    # 'memoize' é extremamente vantajoso em casos aonde a mesma
+    # instância é utilizada para resolver lotes grandes de CEPs
+    use Geo::CEP qw(memoize);
 
     my $gc = Geo::CEP->new;
     p $gc->find("12420-010");
@@ -54,25 +57,25 @@ Tamanho do índice.
 
 Mapeamento de código de estado para o nome do estado (C<AC =E<gt> 'Acre'>).
 
+=head2 idx_len
+
+Tamanho do registro de índice.
+
 =head1 METHODS
-
-=head2 get_idx($n)
-
-Retorna o registro no arquivo CSV; uso interno.
-
-=head2 bsearch($hi, $val)
-
-Efetua a busca binária (implementação não-recursiva); uso interno.
-
-=head2 fetch_row($offset)
-
-Lê e formata o registro a partir do F<cep.csv>; uso interno.
 
 =head2 find($cep)
 
 Busca por C<$cep> (no formato I<12345678> ou I<"12345-678">) e retorna I<HashRef> com:
 
 =over 4
+
+=item *
+
+I<cep_initial>: o início da faixa de CEPs da cidade;
+
+=item *
+
+I<cep_final>: o término da faixa de CEP da cidade;
 
 =item *
 
@@ -110,7 +113,7 @@ Retorna I<HashRef> com os dados de todas as cidades.
 =end test_synopsis
 
 =for Pod::Coverage BUILD
-DEMOLISH
+import
 
 =head1 SEE ALSO
 
